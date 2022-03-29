@@ -156,7 +156,7 @@ int main()
 
 	if (version != 0x23f00206) //Windows 10 21h2 19044.1586
 	{
-		printf("exploit not supported for this Windows OS. Yo need to adjust ROP gadgets and maybe the shellcode\n");
+		printf("exploit maybe not supported for this Windows OS. You should verify EPROCESS offsets before running the exploit\n");
 		system("pause");
 		return -1;
 	}
