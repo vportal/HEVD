@@ -150,7 +150,7 @@ The memory layout at this point is showed below:
       
 ####  3. Reclaim freed HEVD object
        
-Right now we need to reclaim the freed HEVD object spraying again with NpFr (DATA_QUEUE_ENTRY) objects. The code is the that used previously in step 1.
+Right now we need to reclaim the freed HEVD object spraying again with NpFr (DATA_QUEUE_ENTRY) objects. The code is the same  used previously in the step 1.
     
 It's important to use the same unique pipe name that was used in the first spray. The reason of this will be explained in the next section and it's related with the cleanup process. At this point the memory layout is showed below:
     
@@ -193,7 +193,7 @@ Now the memory layout is:
 
 ![Image](/images/fakeobject2.jpg)   
 
-Therefore we can place a fake DATA_QUEUE_ENTRY object in memory and we can interact from user-land with it using its related handler and Windows APIs. How we build this fake object is the key to achieve arbitrary red and write but we first need to locate the handler related with the fake object. This can be done writting specific bytes (magic bytes) in the last spray using the IOCTL 0x222053 and iterating through all the handlers until we get a match when reading the content of the entry using the API PeekNamedPipe():
+Therefore we can place a fake DATA_QUEUE_ENTRY object in memory and we can interact from user-land with it using its related handler and Windows APIs. How we build this fake object is the key to achieve arbitrary read and write but we first need to locate the handler related with the fake DATA_QUEUE_ENTRY object. This can be done writting specific bytes (magic bytes) in the last spray using the IOCTL 0x222053 and iterating through all the handlers until we get a match when reading the content of the entry using the API PeekNamedPipe():
 
  ```
 PIPE_HANDLES DetectPipe()
@@ -228,7 +228,7 @@ PIPE_HANDLES DetectPipe()
 
  ```
 
-For this action we need to use PeekNamedPipe instead of ReadFile because when reading all the bytes of a specific entry the entry is freed and we don't want this. Nevertheless with the PeekNamedPipe the QuotaInEntry of the DATA_QUEUE_ENTRY is not decremented and therefore the entry is not freed, which lead in kernel security check because we have corrupted the flink and blink pointers of the DATA_QUEUE_ENTRY object. For more information of this KERNEL SECURITY CHECK read https://msrc-blog.microsoft.com/2013/11/06/software-defense-safe-unlinking-and-reference-count-hardening/#:~:text=Safe%20unlinking%20%28and%20safe%20linking%29%20are%20a%20set,as%20a%20list%20entry%20unlink%20or%20link%2C%20occurs.
+For this action we need to use PeekNamedPipe instead of ReadFile because when reading all the bytes of a specific DATA_QUEUE_ENTRY, the entry is freed and we don't want this. Nevertheless with the PeekNamedPipe the QuotaInEntry of the DATA_QUEUE_ENTRY is not decremented and therefore the entry is not freed. 
 
 ## ARBITRARY MEMORY READ
 
@@ -249,8 +249,8 @@ In order to understand how we can achieve arbitrary memory read we need to under
  
 The field "EntryType" differentiate two types of entries:
 
-	- Buffered
-	- Unbuffered
+- Buffered
+- Unbuffered
 	
 When creating a DATA_QUEUE_ENTRY using the WriteFile API we find the content below in memory:
 
@@ -318,11 +318,11 @@ The following diagram shows this relationship:
 
 ![Image](/images/dqe_ccb_relation.png)  
 
-Now that we understand a little bit more the relation between objects, lets check the end of te while loop of the Npfs!NpReadDataQueue function. This loop is going to iterate over all the DATA_QUEUE_ENTRY objects stored in the DATA_QUEUE using the LIST_ENTRY field of the DATA_QUEUE_ENTRY header as showed below:
+Now that we understand a little bit more the relation between objects, lets check the end of the while loop of the Npfs!NpReadDataQueue function. This loop is going to iterate over all the DATA_QUEUE_ENTRY objects stored in the DATA_QUEUE using the LIST_ENTRY field of the DATA_QUEUE_ENTRY header as showed below:
 
 ![Image](/images/iterator_read.png)  
 
-So the peek operation can potentially read data of several entries in one operation. Whit this understaing of the NPFS driver internals we can better build a fake object that help us to achieve our goal, the arbitrary memory read.
+So the peek operation can potentially read data of several entries in one operation. Whit this understaing of the NPFS driver internals we can better build a fake object that help us to achieve our first goal, the arbitrary memory read.
 
 Because replacing the freed object with a fake unbuffered DATA_QUEUE_ENTRY in kernel is tricky as we need a valid IRP, we can insted place a buffered DATA_QUEUE_ENTRY which its LIST_ENTRY flink field points to a unbuffered DATA_QUEUE_ENTRY with a fake IRP both in userland. Because SMAP is not fully enabled in the Windows kernel (https://github.com/microsoft/MSRC-Security-Research/blob/master/papers/2020/Evaluating%20the%20feasibility%20of%20enabling%20SMAP%20for%20the%20Windows%20kernel.pdf ) we can read or write user-land data from kernel-land without problems. 
 
@@ -375,7 +375,7 @@ memcpy(DataEntrySpray, InputBuffer, 0x58);
   ```
   
 This fake buffered DATA_QUEUE_ENTRY will be in the kernel and its flink pointer points to the unbuffered user-land DATA_QUEUE_ENTRY. The DataSize should be enough to leak the memory content of the next entry as well as trigger the read of the user-land entry pointed by flink.
-At this moment we have achieved the arbitrary memory read and we can start leaking data that help in our goal.
+At this moment we have achieved the arbitrary memory read and we can start leaking data that help us in our goal.
 
 ## WHAT TO READ
 
@@ -691,3 +691,4 @@ SprayNonPagedPool(DataEntrySpray); //Reclaim NpFr DATA_QUEUE_ENTRY
  1. https://doxygen.reactos.org/d4/d30/drivers_2filesystems_2npfs_2npfs_8h_source.html
  2. https://github.com/vp777/Windows-Non-Paged-Pool-Overflow-Exploitation
  3. https://github.com/synacktiv/Windows-kernel-SegmentHeap-Aligned-Chunk-Confusion/blob/master/Scoop_The_Windows_10_pool.pdf
+ 4. https://github.com/microsoft/MSRC-Security-Research
