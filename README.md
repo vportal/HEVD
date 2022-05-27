@@ -2,7 +2,7 @@
 
 ## INTRODUCTION
 
-Searching the internet about windows kernel exploitation i have found a lot of resources related to HackSysExtremeVulnerableDriver in Windows 7. However, i haven't found many references related to HackSysExtremeVulnerableDriver in Windows 10, so i have decided to dig into Windows 10 modern kernel exploitation and develop an exploit for the Use After Free vulnerability in NonPagedNX pool affecting this driver.
+Searching the internet about windows kernel exploitation i have found a lot of resources related to HackSysExtremeVulnerableDriver in Windows 7. However, i haven't found many references related to HackSysExtremeVulnerableDriver in Windows 10, so i have decided to dig into Windows 10 modern kernel exploitation and develop an exploit for the Use After Free vulnerability in NonPagedNX pool affecting this driver using a data-only attack approach.
 
 ## THE VULNERABILITY
 
