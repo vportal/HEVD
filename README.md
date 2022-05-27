@@ -563,7 +563,7 @@ Substracting 0x2C8 to this address we can find a pointer inside the _ETHREAD obj
 
 LooKing into the _EPROCESS pointer we can leak the PID of the current process as well as the pointer of the ActiveProcessLinks LIST_ENTRY. 
 
-![Image](/images/__EPROCESS.png)  
+![Image](/images/__EPROCESS.JPG)  
 
 Using all this information we can iterate through this linke list until we get the _EPROCESS structure of the SYSTEM process (PID=4). The following code is used to return the process address of a supplied PID.
 
