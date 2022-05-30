@@ -11,13 +11,13 @@ The vulnerability is pretty simple to understand. There are two IOCTL calls that
 #### AllocateUaFObjectNonPagedPoolNX:
 This IOCTL (0x222053) allocates an object in the NonPagedNx pool with the tag "Hack". The size of the object is 0x60 bytes and the returned pointer by ExAllocatePoolWithTag is stored in a global variable called g_UseAfterFreeObjectNonPagedPoolNx:
 
-![Image](/images/AllocatePoolWithTag_0x222053.jpg)
+![Image](https://github.com/vportal/images/AllocatePoolWithTag_0x222053.jpg)
 
 #### FreeUaFObjectNonPagedPoolNx:
 
 Calling the IOCTL (0x22205B) just free the previous allocated object:
 
-![Image](/images/FreePoolWithTag_0x22205B.jpg)
+![Image](https://github.com/vportal/images/FreePoolWithTag_0x22205B.jpg)
 
 There are other IOCTL calls related to this vulnerability like AllocateFakeObjectNonPagedPoolNX or UseUafObjectNonPagedPoolNX that are not needed. 
 One of the main advantages of this vulnerability is that the attacker can control the time between the free and the use and that the attacker can free the vulnerable object multiple times.
