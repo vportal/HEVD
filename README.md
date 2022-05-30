@@ -105,7 +105,7 @@ printf("[+] Spray 10,000 DATA_QUEUE_ENTRY objects in Non-Paged Pool\n");
   
   After this spray, the nonpaged pool memory should looks like:
   
-  ![Image](/images/spray1.jpg)
+  ![Image]([/images](https://github.com/vportal/images/spray1.jpg)
   
   ####  2. Create holes
   
