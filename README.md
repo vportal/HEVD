@@ -599,7 +599,7 @@ To convert the UAF in arbitrary write we need to take a look into the IRP struct
 
 ![Image](/images/__MSDNIRP.png)  
 
-As you can see, then NPFS complete the request related with the IRP structure the content of the SystemBuffer will be the UserBuffer. Because we can trigger the UAF to place a fake unbuffered DATA_QUEUE_ENTRY pointing to a fake IRP object that we control, we can potentially abuse this behaviour to write the SYSTEM token into the current process _EPROCESS structure. 
+As you can see, when NPFS.sys complete the request related with the IRP structure, the memory content pointed by the SystemBuffer field will be copied to the memory pointed by the UserBuffer field. Because we can trigger the UAF to place a fake unbuffered DATA_QUEUE_ENTRY pointing to a fake IRP object that we control, we can potentially abuse this behaviour to write the SYSTEM token into the current process _EPROCESS structure. 
 
 However, the fake IRP object should be in kernel memory space because the IRP completition happens inside the Ntoskrnl.exe binary. Specifically, the memory copy operation happens in the IopCompleteRequest+0x286028:
 
