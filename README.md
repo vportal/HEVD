@@ -322,7 +322,7 @@ Now that we understand a little bit more the relation between objects, lets chec
 
 ![Image](/images/iterator_read.png)  
 
-So the peek operation can potentially read data of several entries in one operation. Whit this understaing of the NPFS driver internals we can better build a fake object that help us to achieve our first goal, the arbitrary memory read.
+So the peek operation can potentially read data of several entries in one operation. With this understanding of the NPFS driver internals we can better build a fake object that help us to achieve our first goal, the arbitrary memory read.
 
 Because replacing the freed object with a fake unbuffered DATA_QUEUE_ENTRY in kernel is tricky as we need a valid IRP, we can insted place a buffered DATA_QUEUE_ENTRY which its LIST_ENTRY flink field points to a unbuffered DATA_QUEUE_ENTRY with a fake IRP both in userland. Because SMAP is not fully enabled in the Windows kernel (https://github.com/microsoft/MSRC-Security-Research/blob/master/papers/2020/Evaluating%20the%20feasibility%20of%20enabling%20SMAP%20for%20the%20Windows%20kernel.pdf ) we can read or write user-land data from kernel-land without problems. 
 
